@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>PrintBot</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; padding: 20px; color: #333; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    h1, h2 { color: #5a67d8; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; }
+    button { background: #5a67d8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #434ce8; }
+    ul { list-style-type: none; padding: 0; }
+    li { background: #edf2f7; margin-bottom: 10px; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .audio-player { margin-left: 15px; height: 35px; }
+    .badge-active { background: #38a169; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-left: 10px; }
+    .btn-select { background: #cbd5e0; color: #2d3748; }
+    .btn-select:hover { background: #a0aec0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PrintBot</h1>
+    <p>Gérez ici la configuration et la voix de référence pour le robot physique ATOM Echo.</p>
+
+    <h2>Configuration API</h2>
+    <div style="background: #e2e8f0; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+      <form id="apiKeyForm" style="display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; gap: 10px; align-items: flex-end;">
+          <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
+            <label for="replicateKey">Clé API Replicate (Images & Voix TTS)</label>
+            <input type="password" id="replicateKey" name="replicate_key" placeholder="r8_...">
+            <small id="replicateKeyStatus" style="display: block; margin-top: 5px; color: #718096;">Vérification de la clé en cours...</small>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-end;">
+          <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
+            <label for="anthropicKey">Clé API Anthropic (Claude pour l'optimisation des prompts)</label>
+            <input type="password" id="anthropicKey" name="anthropic_key" placeholder="sk-ant-api03-...">
+            <small id="anthropicKeyStatus" style="display: block; margin-top: 5px; color: #718096;">Vérification de la clé en cours...</small>
+          </div>
+        </div>
+        <button type="submit" style="align-self: flex-start;">Sauvegarder les clés</button>
+      </form>
+    </div>
+
+    <h2>Configuration Imprimante Niimbot</h2>
+    <div style="background: #e2e8f0; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+      <p style="margin-top: 0; font-size: 14px; color: #4a5568;">Assurez-vous que l'imprimante est allumée et jumelée à Windows via les paramètres Bluetooth.</p>
+      <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px;">
+        <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
+          <label for="printerPort">Port Série (COM) de l'imprimante</label>
+          <div style="display: flex; gap: 10px;">
+            <select id="printerPort" style="flex-grow: 1; padding: 8px;">
+              <option value="">Chargement des ports...</option>
+            </select>
+            <button type="button" id="btnRefreshPorts" style="background: #718096;">Actualiser</button>
+          </div>
+        </div>
+      </div>
+      <button type="button" id="btnTestPrinter" style="background: #38a169;">Tester et Sauvegarder</button>
+      <div id="printerStatus" style="margin-top: 10px; font-weight: bold; font-size: 14px;"></div>
+    </div>
+
+    <h2>Ajouter une nouvelle voix</h2>
+    <form id="uploadForm">
+      <div class="form-group">
+        <label for="voiceName">Nom de la voix (ex: Femme Québécoise Dynamique)</label>
+        <input type="text" id="voiceName" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="voiceAudio">Fichier Audio (.wav, .mp3 - voix seule, sans bruit de fond, 10-15 sec)</label>
+        <input type="file" id="voiceAudio" name="audio_reference" accept=".wav,.mp3,.ogg,.m4a" required>
+      </div>
+      <div class="form-group">
+        <label for="voiceStyle">Style de la voix (Optionnel - ex: "Voix d'une petite fille", "Voix de robot grave")</label>
+        <input type="text" id="voiceStyle" name="style" placeholder="Laissez vide pour le style homme par défaut">
+      </div>
+      <button type="submit">Sauvegarder la voix</button>
+    </form>
+
+    <h2>Banque de Voix du Robot</h2>
+    <p>La voix active ci-dessous est celle qui est actuellement utilisée par l'ESP32. Cliquez sur "Sélectionner" pour en changer.</p>
+    <ul id="voicesList">
+      <li>Chargement des voix...</li>
+    </ul>
+
+    <h2>Console du Serveur (Live Logs)</h2>
+    <div id="logWindow" style="background: #1a202c; color: #48bb78; height: 300px; overflow-y: auto; padding: 15px; font-family: monospace; font-size: 13px; border-radius: 4px; white-space: pre-wrap; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">
+      En attente des logs...
+    </div>
+  </div>
+
+  <script>
+    async function fetchApiKeyStatus() {
+      const res = await fetch('/api-key');
+      const data = await res.json();
+      
+      const repStatus = document.getElementById('replicateKeyStatus');
+      const repInput = document.getElementById('replicateKey');
+      if (data.replicate.has_key) {
+        repStatus.textContent = 'Clé Replicate configurée : ' + data.replicate.masked;
+        repStatus.style.color = 'green';
+        repInput.placeholder = 'Clé déjà configurée (masquée)';
+      } else {
+        repStatus.textContent = 'Aucune clé Replicate configurée. Le système ne fonctionnera pas.';
+        repStatus.style.color = 'red';
+      }
+
+      const antStatus = document.getElementById('anthropicKeyStatus');
+      const antInput = document.getElementById('anthropicKey');
+      if (data.anthropic.has_key) {
+        antStatus.textContent = 'Clé Anthropic configurée : ' + data.anthropic.masked;
+        antStatus.style.color = 'green';
+        antInput.placeholder = 'Clé déjà configurée (masquée)';
+      } else {
+        antStatus.textContent = 'Aucune clé Anthropic configurée. L\'optimisation des dessins sera désactivée.';
+        antStatus.style.color = 'orange';
+      }
+    }
+
+    document.getElementById('apiKeyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api-key', { method: 'POST', body: formData });
+        if(res.ok) {
+          e.target.reset();
+          fetchApiKeyStatus();
+          alert('Clé API sauvegardée !');
+        } else {
+          const result = await res.json();
+          alert('Erreur: ' + result.error);
+        }
+      } catch (err) {
+        alert('Erreur réseau.');
+      }
+      btn.disabled = false;
+    });
+
+    let activeVoiceId = null;
+
+    async function fetchActiveVoice() {
+      const res = await fetch('/api/active_voice');
+      const data = await res.json();
+      activeVoiceId = data.active_voice;
+      return activeVoiceId;
+    }
+
+    async function setActiveVoice(id) {
+      try {
+        await fetch('/api/active_voice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ voice_id: id })
+        });
+        fetchVoices();
+      } catch (err) {
+        alert("Erreur lors de l'activation de la voix");
+      }
+    }
+
+    async function editVoiceStyle(id, currentStyle) {
+      const newStyle = prompt("Entrez le nouveau style de la voix (ex: Voix d'une petite fille joyeuse) :", currentStyle || "");
+      if (newStyle === null) return; // cancelled
+      
+      try {
+        const res = await fetch(`/voice-library/${id}/style`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ style: newStyle })
+        });
+        if (res.ok) {
+          fetchVoices();
+        } else {
+          const result = await res.json();
+          alert("Erreur: " + result.error);
+        }
+      } catch (err) {
+        alert("Erreur réseau");
+      }
+    }
+
+    async function fetchVoices() {
+      await fetchActiveVoice();
+      const res = await fetch('/voice-library');
+      const data = await res.json();
+      const list = document.getElementById('voicesList');
+      
+      list.innerHTML = '';
+      
+      if(data.voices.length === 0) {
+        list.innerHTML = '<li>Aucune voix sauvegardée pour le moment.</li>';
+        return;
+      }
+
+      data.voices.forEach(v => {
+        const isActive = (v.id === activeVoiceId) || (!activeVoiceId && data.voices.indexOf(v) === 0);
+        
+        const li = document.createElement('li');
+        
+        const infoDiv = document.createElement('div');
+        infoDiv.style.display = 'flex';
+        infoDiv.style.flexDirection = 'column';
+        infoDiv.style.gap = '5px';
+        
+        const topRow = document.createElement('div');
+        topRow.style.display = 'flex';
+        topRow.style.alignItems = 'center';
+        
+        const nameStrong = document.createElement('strong');
+        nameStrong.textContent = v.name;
+        topRow.appendChild(nameStrong);
+        
+        if (isActive) {
+          const badge = document.createElement('span');
+          badge.className = 'badge-active';
+          badge.textContent = 'Voix Active';
+          topRow.appendChild(badge);
+        }
+        infoDiv.appendChild(topRow);
+        
+        const styleRow = document.createElement('div');
+        styleRow.style.fontSize = '12px';
+        styleRow.style.color = '#4a5568';
+        const displayStyle = v.style || "Voix d'un homme adulte, ton naturel.";
+        styleRow.innerHTML = `<em>Style : ${displayStyle}</em> <a href="#" style="color:#5a67d8; margin-left:8px; text-decoration:none;" onclick="editVoiceStyle('${v.id}', '${displayStyle.replace(/'/g, "\\'")}'); return false;">(Modifier)</a>`;
+        infoDiv.appendChild(styleRow);
+        
+        const audio = document.createElement('audio');
+        audio.className = 'audio-player';
+        audio.controls = true;
+        audio.src = `/voice-library/${v.id}/audio`;
+        
+        const btn = document.createElement('button');
+        if (isActive) {
+          btn.textContent = "Sélectionnée";
+          btn.disabled = true;
+          btn.style.opacity = 0.5;
+          btn.style.cursor = 'not-allowed';
+        } else {
+          btn.textContent = "Choisir cette voix";
+          btn.className = "btn-select";
+          btn.onclick = () => setActiveVoice(v.id);
+        }
+        
+        const rightDiv = document.createElement('div');
+        rightDiv.style.display = 'flex';
+        rightDiv.style.alignItems = 'center';
+        rightDiv.style.gap = '15px';
+        rightDiv.appendChild(audio);
+        rightDiv.appendChild(btn);
+        
+        li.appendChild(infoDiv);
+        li.appendChild(rightDiv);
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = 'Enregistrement...';
+
+      const formData = new FormData(e.target);
+      try {
+        const res = await fetch('/voice-library', { method: 'POST', body: formData });
+        const result = await res.json();
+        if(res.ok) {
+          e.target.reset();
+          fetchVoices();
+          alert('Voix sauvegardée avec succès !');
+        } else {
+          alert('Erreur: ' + result.error);
+        }
+      } catch (err) {
+        alert('Erreur réseau.');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Sauvegarder la voix';
+    });
+
+    async function fetchLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        if (res.ok) {
+          const data = await res.json();
+          const logWindow = document.getElementById('logWindow');
+          const isScrolledToBottom = logWindow.scrollHeight - logWindow.clientHeight <= logWindow.scrollTop + 10;
+          
+          logWindow.innerHTML = data.logs.join('<br>');
+          
+          if (isScrolledToBottom) {
+            logWindow.scrollTop = logWindow.scrollHeight;
+          }
+        }
+      } catch (err) {
+        // Silencieux pour ne pas spammer la console du navigateur
+      }
+    }
+
+    async function fetchPrinterPorts() {
+      const select = document.getElementById('printerPort');
+      select.innerHTML = '<option value="">Chargement...</option>';
+      try {
+        const res = await fetch('/api/printer/ports');
+        const data = await res.json();
+        select.innerHTML = '';
+        if (data.ports.length === 0) {
+          select.innerHTML = '<option value="">Aucun port COM detecte</option>';
+        } else {
+          data.ports.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.textContent = p;
+            if (p === data.current_port) {
+              opt.selected = true;
+            }
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        select.innerHTML = '<option value="">Erreur de chargement</option>';
+      }
+    }
+
+    document.getElementById('btnRefreshPorts').addEventListener('click', fetchPrinterPorts);
+
+    document.getElementById('btnTestPrinter').addEventListener('click', async () => {
+      const port = document.getElementById('printerPort').value;
+      const status = document.getElementById('printerStatus');
+      if (!port) {
+        status.textContent = 'Veuillez selectionner un port.';
+        status.style.color = 'red';
+        return;
+      }
+      
+      const btn = document.getElementById('btnTestPrinter');
+      btn.disabled = true;
+      btn.textContent = 'Test en cours... (Patientez)';
+      status.textContent = '';
+      
+      try {
+        const res = await fetch('/api/printer/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ port: port })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          status.innerHTML = `&#9989; Connexion reussie sur ${port} ! Niveau de batterie : ${data.battery}%`;
+          status.style.color = 'green';
+        } else {
+          status.textContent = `&#10060; Erreur : ${data.error}`;
+          status.style.color = 'red';
+        }
+      } catch (err) {
+        status.textContent = `&#10060; Erreur reseau ou serveur injoignable.`;
+        status.style.color = 'red';
+      }
+      
+      btn.disabled = false;
+      btn.textContent = 'Tester et Sauvegarder';
+    });
+
+    // Initial load
+    fetchApiKeyStatus();
+    fetchVoices();
+    fetchLogs();
+    fetchPrinterPorts();
+    
+    // Auto-refresh
+    setInterval(fetchLogs, 2000);
+  </script>
+  <footer style="margin-top: 40px; text-align: center; font-size: 12px; color: #718096; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+    PrintBot · 
+    <a href="https://replicate.com/account/billing" target="_blank" rel="noopener" style="color: #5a67d8; text-decoration: none;">Replicate Billing</a> · 
+    <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color: #5a67d8; text-decoration: none;">Anthropic API Keys</a>
+  </footer>
+</body>
+</html>

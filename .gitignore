@@ -1,0 +1,35 @@
+# Sécurité des clés (CRITIQUE)
+.env
+
+# Environnement Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+
+# Modèles IA Lourds (Whisper)
+server/_models/
+
+# Caches et fichiers locaux spécifiques à l'utilisateur
+server/_tts_cache/
+server/voice_library/
+
+# Fichiers audio/images temporaires
+*.wav
+*.png
+server/*.wav
+server/*.png
+
+# Fichiers système de l'OS
+.DS_Store
+Thumbs.db
+
+# IDE / Éditeurs
+.idea/
+.vscode/
+*.swp
