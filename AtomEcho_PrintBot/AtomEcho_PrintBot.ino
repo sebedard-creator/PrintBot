@@ -108,6 +108,8 @@ void setupI2SSpeaker() {
   wav = new AudioGeneratorWAV();
 }
 
+void playTTS(String audioUrl, bool isDisco = false);
+
 void setup() {
   Serial.begin(115200);
   pinMode(BTN_PIN, INPUT_PULLUP);
@@ -156,7 +158,7 @@ void setup() {
   playTTS("/api/greeting");
 }
 
-void playTTS(String audioUrl) {
+void playTTS(String audioUrl, bool isDisco) {
   if (audioUrl.length() < 5) return;
   
   String fullUrl = audioUrl;
@@ -170,16 +172,24 @@ void playTTS(String audioUrl) {
   Serial.println("Lecture WAV : " + fullUrl);
   file = new AudioFileSourceHTTPStream(fullUrl.c_str());
   
+  unsigned long lastDiscoUpdate = 0;
+  if (isDisco) FastLED.setBrightness(255);
+  
   if (wav->begin(file, out)) {
     while(wav->isRunning()) {
       if (!wav->loop()) {
         wav->stop();
+      }
+      if (isDisco && millis() - lastDiscoUpdate > 100) {
+        lastDiscoUpdate = millis();
+        setLED(CHSV(random8(), 255, 255));
       }
     }
   } else {
     Serial.println("Erreur lecture WAV");
   }
   
+  if (isDisco) FastLED.setBrightness(20);
   delete file;
   file = NULL;
 }
@@ -253,10 +263,13 @@ void loop() {
         const char* action_str = doc["action"];
         
         bool didPrint = false;
+        bool isDisco = false;
         
         if (action_str != nullptr && String(action_str) == "PRINT") {
           setLED(CRGB::Purple); // Il imprime
           didPrint = true;
+        } else if (action_str != nullptr && String(action_str) == "PLAY_SONG") {
+          isDisco = true;
         } else if (state_str != nullptr) {
           if (String(state_str) == "CONFIRMING") {
             setLED(CRGB::Blue); // Oui ou non
@@ -268,11 +281,11 @@ void loop() {
         }
         
         if (audio_url != nullptr) {
-          playTTS(String(audio_url));
+          playTTS(String(audio_url), isDisco);
         }
         
         // Après avoir parlé, si on vient de lancer une impression, on redevient prêt
-        if (didPrint) {
+        if (didPrint || isDisco) {
           setLED(CRGB::Green); // Prêt pour l'image suivante
         }
       }

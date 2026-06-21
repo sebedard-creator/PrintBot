@@ -31,6 +31,11 @@ class ConversationManager:
         text_lower = text.lower()
         text_norm = ''.join(c for c in unicodedata.normalize('NFD', text_lower) if unicodedata.category(c) != 'Mn')
         
+        # Easter Egg: Chanson
+        if re.search(r'\b(?:chante[- ]?moi une chanson|une chanson|la chanson)\b', text_norm):
+            self.state = STATE_WAITING_PROMPT
+            return "", "PLAY_SONG"
+        
         # Detection de la commande de changement de voix (accessible de n'importe ou sauf pendant le choix lui-meme)
         # On inclut des erreurs fréquentes de Whisper comme "Chanser de voir", "Changer de bois", ou "Changer de foi"
         if self.state != STATE_CHANGING_VOICE and re.search(r'\b(?:change|changer|chanse|chanser|changement) de (?:la )?(?:voix|voie|voir|bois|vwa|foi|fois)\b', text_norm):
@@ -48,11 +53,11 @@ class ConversationManager:
         if self.state == STATE_CHANGING_VOICE:
             # Chercher si le texte contient un numero ou une orthographe approximative (homophones Whisper)
             number_map = {
-                "un": 1, "une": 1, "1": 1, "in": 1, "hun": 1, "ain": 1, "en": 1, "on": 1,
+                "un": 1, "une": 1, "1": 1, "in": 1, "hun": 1, "ain": 1, "en": 1, "on": 1, "arrête": 1, "erre": 1, "art": 1, "arr...": 1,
                 "deux": 2, "2": 2, "de": 2, "dirt": 2, "do": 2, "the": 2, "dough": 2, "d'eux": 2,
                 "trois": 3, "3": 3, "toi": 3, "tree": 3, "twa": 3,
                 "quatre": 4, "4": 4, "cat": 4, "cut": 4,
-                "cinq": 5, "5": 5, "sank": 5, "sync": 5, "sink": 5, "cent": 5,
+                "cinq": 5, "5": 5, "sank": 5, "sync": 5, "sink": 5, "cent": 5, "thank": 5, "you": 5, "saintes": 5, "saint": 5, "sainte": 5,
                 "six": 6, "6": 6, "sis": 6, "sees": 6,
                 "sept": 7, "7": 7, "set": 7, "seth": 7, "cest": 7, "sait": 7, "cet": 7, "cette": 7,
                 "huit": 8, "8": 8, "wheat": 8, "wait": 8, "oui": 8,

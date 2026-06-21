@@ -228,7 +228,7 @@ def generate_image(prompt_text):
             "If the user asks for a 'red logo', rewrite it to 'a black and white line art version of the logo'. Do not use color words. "
             "CRITICAL RULE 3: If they ask for weird anomalies (e.g., a 5-legged dog), ENHANCE the prompt to FORCE the model to draw it using heavy emphasis. "
             "FORMAT: Output ONLY the english prompt. Start with the highly detailed subject. Then, ALWAYS append this exact style at the very end: "
-            "'Clean contour line drawing, black ink on pure white paper, uniform line thickness, unshaded. No solid black fills, no crosshatching, pure outlines only.'"
+            "'Detailed black and white illustration. Rich shading, soft gradients, halftones, or stippling are encouraged to give depth and volume. No pure flat outlines, use beautiful greyscale shading.'"
         )
         # Récupération dynamique des modèles disponibles sur ce compte pour éviter les 404
         try:

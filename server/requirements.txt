@@ -9,4 +9,3 @@ deep-translator>=1.11.4
 pydub>=0.25.1
  
 pyserial
-niimprint

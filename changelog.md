@@ -4,6 +4,70 @@ Toutes les modifications importantes de ce projet (Vibe-Print Bot) seront docume
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/), et ce projet adhère au [Versionnement Sémantique](https://semver.org/).
 
+
+## [0.9.0] - 2026-06-21
+### Ajouté
+- **Easter Egg Musical & Mode Disco :** Si l'utilisateur prononce "chante-moi une chanson" ou une de ses variantes phonétiques, le processus standard IA est court-circuité. Le serveur pige aléatoirement parmi 5 chansons pré-converties en format natif (PCM 16kHz) et les envoie à l'imprimante. L'ATOM Echo passe alors en mode Disco avec sa LED qui clignote aléatoirement de toutes les couleurs à intensité maximale pendant la musique.
+- **Aide Bluetooth Intégrée :** Ajout d'un bouton "Aide Bluetooth" dans l'interface Web (index.html) qui affiche un guide détaillé étape par étape pour configurer le port COM virtuel sous Windows.
+- **Tolérance Vocale Étendue (Homophones) :** Extension du dictionnaire de remplacement dans `conversation_manager.py` pour inclure de nouveaux faux positifs de Whisper lorsqu'on sélectionne la voix #1 (ex: "arrête", "erre", "art", "arr...").
+
+### Modifié
+- **Thème Sombre (Dark Mode) :** Refonte complète de l'interface `index.html`. L'UI utilise des couleurs modernes (bleu nuit, gris ardoise) et une astuce CSS (`filter: invert`) pour adapter le lecteur audio natif au mode sombre.
+- **Raffinement Claude (Dithering Optimisé) :** Suppression de la mention "high contrast" dans le prompt système de `printbot_engine.py`. Claude est désormais instruit de favoriser les dégradés doux et les demi-teintes ("soft gradients", "halftones") pour maximiser la qualité du pointillage (dithering) de l'impression thermique.
+- **Sécurisation des Fichiers Audio (ESP32) :** Utilisation d'un utilitaire Python (`wave` module) en aval de `ffmpeg` pour arracher absolument toutes les métadonnées (chunks `LIST` / `INFO`) des fichiers musicaux générés, empêchant les crashs silencieux de la librairie stricte `ESP8266Audio` de l'ATOM Echo.
+- **Correction Compilateur Arduino (C++) :** Ajout manuel des déclarations forward (`void playTTS...`) au-dessus de la fonction `setup()` dans `AtomEcho_PrintBot.ino` pour contourner le bug de l'auto-générateur d'Arduino avec les paramètres par défaut (`bool isDisco = false`).
+
+## [0.8.0] - 2026-06-20
+### Corrigé
+- **Rétro-ingénierie et Correction du Protocole Niimbot B1 (Bibliothèque `niimprint`) :**
+  Une session de débogage intensive a été menée pour corriger plusieurs bugs critiques liés à l'impression sur l'imprimante thermique Niimbot B1 via Bluetooth SPP (Serial Port Profile) sur Windows. Ces problèmes causaient des coupures d'image, des plantages matériels, et l'absence de la bordure inférieure des étiquettes.
+
+En utilisant un script espion JavaScript dans les DevTools du navigateur pour intercepter les paquets envoyés par l'application Web `niim.blue` (WebBluetooth), nous avons pu comparer le trafic hexadécimal et isoler les erreurs dans notre implémentation Python (`printer.py` de la librairie `niimprint`).
+
+Voici les modifications techniques apportées pour stabiliser l'imprimante :
+
+1. **Orientation et Dimensions du Canvas (384x240) :**
+   - **Problème :** L'imprimante imprimait de manière désaxée.
+   - **Solution :** Pour une étiquette standard de 50x30mm à 203 DPI (8 dots/mm), la tête d'impression (Printhead) de la B1 fait très exactement **48mm de large, soit 384 pixels**. L'avancement (feed) fait **240 pixels**. La commande `set_dimension(rows, cols)` doit être appelée avec `(240, 384)`.
+
+2. **Contrôle de Flux et *Buffer Overflow* :**
+   - **Problème :** Sur Windows, l'envoi de l'image de 13 Ko s'effectuait presque instantanément via SPP (sans attente de confirmation ACK comme en WebBluetooth). L'imprimante saturait sa mémoire tampon et perdait les paquets de la ligne ~200, ce qui causait une erreur matérielle et arrêtait la chauffe.
+   - **Solution :** Implémentation d'un délai d'envoi. Un `time.sleep(0.1)` est désormais ajouté après l'envoi de chaque bloc de 40 lignes. Cela permet à l'imprimante de traiter physiquement les données et de vider sa mémoire.
+
+3. **Séquence d'Initialisation (START_PRINT) :**
+   - **Problème :** La commande `START_PRINT` originale de `niimprint` n'envoyait qu'un seul octet (`0x01`).
+   - **Solution :** Correction pour correspondre au `printStart7b` de `niim.blue`. La commande de démarrage envoie maintenant 7 octets (`struct.pack(">H5B", pages, 0, 0, 0, 0, color)`) afin de configurer correctement la longueur attendue de la file d'attente d'impression dans la puce de l'imprimante.
+
+4. **Le Bug de la "Bordure Disparue" (*End Print Abort*) :**
+   - **Problème :** L'imprimante coupait systématiquement les 20 derniers pixels de l'image (le bas de l'étiquette), bien que l'image fasse exactement 240 pixels de hauteur.
+   - **Cause :** Dans la boucle finale de la fonction `print_image()`, le code envoyait le paquet `END_PRINT` (`0xF3`) en boucle ou immédiatement après `END_PAGE_PRINT` (`0xE3`). Or, `END_PRINT` est traité par l'imprimante comme une commande matérielle **d'abandon immédiat (Abort)**. Résultat : pendant que le moteur physique poussait encore le papier pour imprimer le bas de la page, le firmware vidait la mémoire.
+   - **Solution :** Remplacement de la boucle par un délai passif (`time.sleep(3)`) après `END_PAGE_PRINT`. Cela donne le temps au moteur physique d'imprimer entièrement le tampon et de sortir l'étiquette jusqu'à la fente d'arrachement *avant* que le signal `END_PRINT` ne ferme la session Bluetooth de manière ordonnée.
+
+- **Rétro-ingénierie et Correction du Protocole Niimbot B1 (Bibliothèque `niimprint`) :**
+  Une session de débogage intensive a été menée pour corriger plusieurs bugs critiques liés à l'impression sur l'imprimante thermique Niimbot B1 via Bluetooth SPP (Serial Port Profile) sur Windows. Ces problèmes causaient des coupures d'image, des plantages matériels, et l'absence de la bordure inférieure des étiquettes.
+
+En utilisant un script espion JavaScript dans les DevTools du navigateur pour intercepter les paquets envoyés par l'application Web `niim.blue` (WebBluetooth), nous avons pu comparer le trafic hexadécimal et isoler les erreurs dans notre implémentation Python (`printer.py` de la librairie `niimprint`).
+
+Voici les modifications techniques apportées pour stabiliser l'imprimante :
+
+1. **Orientation et Dimensions du Canvas (384x240) :**
+   - **Problème :** L'imprimante imprimait de manière désaxée.
+   - **Solution :** Pour une étiquette standard de 50x30mm à 203 DPI (8 dots/mm), la tête d'impression (Printhead) de la B1 fait très exactement **48mm de large, soit 384 pixels**. L'avancement (feed) fait **240 pixels**. La commande `set_dimension(rows, cols)` doit être appelée avec `(240, 384)`.
+
+2. **Contrôle de Flux et *Buffer Overflow* :**
+   - **Problème :** Sur Windows, l'envoi de l'image de 13 Ko s'effectuait presque instantanément via SPP (sans attente de confirmation ACK comme en WebBluetooth). L'imprimante saturait sa mémoire tampon et perdait les paquets de la ligne ~200, ce qui causait une erreur matérielle et arrêtait la chauffe.
+   - **Solution :** Implémentation d'un délai d'envoi. Un `time.sleep(0.1)` est désormais ajouté après l'envoi de chaque bloc de 40 lignes. Cela permet à l'imprimante de traiter physiquement les données et de vider sa mémoire.
+
+3. **Séquence d'Initialisation (START_PRINT) :**
+   - **Problème :** La commande `START_PRINT` originale de `niimprint` n'envoyait qu'un seul octet (`0x01`).
+   - **Solution :** Correction pour correspondre au `printStart7b` de `niim.blue`. La commande de démarrage envoie maintenant 7 octets (`struct.pack(">H5B", pages, 0, 0, 0, 0, color)`) afin de configurer correctement la longueur attendue de la file d'attente d'impression dans la puce de l'imprimante.
+
+4. **Le Bug de la "Bordure Disparue" (*End Print Abort*) :**
+   - **Problème :** L'imprimante coupait systématiquement les 20 derniers pixels de l'image (le bas de l'étiquette), bien que l'image fasse exactement 240 pixels de hauteur.
+   - **Cause :** Dans la boucle finale de la fonction `print_image()`, le code envoyait le paquet `END_PRINT` (`0xF3`) en boucle ou immédiatement après `END_PAGE_PRINT` (`0xE3`). Or, `END_PRINT` est traité par l'imprimante comme une commande matérielle **d'abandon immédiat (Abort)**. Résultat : pendant que le moteur physique poussait encore le papier pour imprimer le bas de la page, le firmware vidait la mémoire.
+   - **Solution :** Remplacement de la boucle par un délai passif (`time.sleep(3)`) après `END_PAGE_PRINT`. Cela donne le temps au moteur physique d'imprimer entièrement le tampon et de sortir l'étiquette jusqu'à la fente d'arrachement *avant* que le signal `END_PRINT` ne ferme la session Bluetooth de manière ordonnée.
+
+
 ## [0.7.0] - 2026-06-18
 ### Ajouté
 - **Intégration Niimbot B1 (Port Série Virtuel) :** Le script interagit désormais avec l'imprimante thermique Niimbot B1 via une connexion Série (COM Port virtuel Windows) plutôt que des sockets RFCOMM bruts, améliorant drastiquement la stabilité.

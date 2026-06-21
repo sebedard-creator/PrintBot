@@ -242,6 +242,10 @@ def test_printer_port():
         battery_bars = client.get_info(InfoEnum.BATTERY)
         battery_percentage = int(battery_bars) * 25 if battery_bars else "Inconnu"
         
+        # TOUJOURS FERMER LE PORT APRES UTILISATION
+        if hasattr(transport, '_serial'):
+            transport._serial.close()
+        
         env_path = os.path.join(app.root_path, '.env')
         set_key(env_path, 'NIIMBOT_COM_PORT', port)
         os.environ['NIIMBOT_COM_PORT'] = port
@@ -397,6 +401,27 @@ def udp_server_thread():
                              img_url_or_path = printbot_engine.generate_image(prompt_text)
                              final_image = os.path.join(app.root_path, "print_ready.png")
                              image_formatter.format_for_thermal_printer(img_url_or_path, final_image)
+                             
+                             # --- Impression physique Niimbot (en arriere-plan) ---
+                             port = os.getenv('NIIMBOT_COM_PORT')
+                             if port:
+                                 def print_task():
+                                     try:
+                                         from niimprint import PrinterClient, SerialTransport
+                                         from PIL import Image
+                                         print(f"[{datetime.now().strftime('%H:%M:%S')}] Envoi de l'image a la Niimbot sur {port}...")
+                                         transport = SerialTransport(port)
+                                         client = PrinterClient(transport)
+                                         client.print_image(Image.open(final_image), density=3)
+                                         if hasattr(transport, '_serial'):
+                                             transport._serial.close()  # TOUJOURS FERMER LE PORT !
+                                         print(f"[{datetime.now().strftime('%H:%M:%S')}] Impression Niimbot terminee.")
+                                     except Exception as e:
+                                         print(f"[{datetime.now().strftime('%H:%M:%S')}] Erreur d'impression Niimbot : {e}")
+                                 threading.Thread(target=print_task).start()
+                             else:
+                                 print(f"[{datetime.now().strftime('%H:%M:%S')}] AVERTISSEMENT : Aucun port COM Niimbot configure dans .env.")
+                             
                              image_url = f'/print-ready?t={os.path.getmtime(final_image)}'
                              
                              ludique_responses = [
@@ -461,13 +486,16 @@ def udp_server_thread():
                                 safe_name = secure_filename(item['name']) or 'voice'
                                 cache_filename = f"greeting_{safe_name}.wav"
                                 tts_filepath = os.path.join(app.root_path, "_tts_cache", cache_filename)
+                                audio_url = f"/tts-cache/{os.path.basename(tts_filepath)}"
+                            elif action == "PLAY_SONG":
+                                audio_url = random.choice(["/tts-cache/chanson.wav", "/tts-cache/chanson2.wav", "/tts-cache/chanson3.wav", "/tts-cache/chanson4.wav", "/tts-cache/chanson5.wav"])
                             else:
                                 ref_audio_path = os.path.join(VOICE_LIBRARY_DIR, item['filename'])
                                 ref_text = item.get('transcript', '')
                                 custom_style = item.get('style', "Voix d'un homme adulte, ton naturel.")
                                 tts_filepath = printbot_engine.clone_voice(response_text, ref_audio_path, ref_text, custom_style)
                                 
-                            audio_url = tts_filepath if (isinstance(tts_filepath, str) and tts_filepath.startswith("http")) else f"/tts-cache/{os.path.basename(tts_filepath)}"
+                                audio_url = tts_filepath if (isinstance(tts_filepath, str) and tts_filepath.startswith("http")) else f"/tts-cache/{os.path.basename(tts_filepath)}"
                         else:
                             audio_url = ""
                             

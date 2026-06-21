@@ -4,19 +4,20 @@
   <meta charset="UTF-8">
   <title>PrintBot</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; padding: 20px; color: #333; }
-    .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    h1, h2 { color: #5a67d8; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a202c; padding: 20px; color: #e2e8f0; }
+    .container { max-width: 800px; margin: auto; background: #2d3748; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #4a5568; }
+    h1, h2 { color: #a3bffa; }
     .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; }
-    input[type="text"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; }
-    button { background: #5a67d8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; color: #cbd5e0; }
+    input[type="text"], input[type="file"], input[type="password"], select { width: 100%; padding: 8px; box-sizing: border-box; background: #4a5568; border: 1px solid #718096; color: #fff; border-radius: 4px; }
+    input::placeholder { color: #a0aec0; }
+    button { background: #5a67d8; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
     button:hover { background: #434ce8; }
     ul { list-style-type: none; padding: 0; }
-    li { background: #edf2f7; margin-bottom: 10px; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-    .audio-player { margin-left: 15px; height: 35px; }
+    li { background: #4a5568; margin-bottom: 10px; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid #718096; }
+    .audio-player { margin-left: 15px; height: 35px; filter: invert(0.9) hue-rotate(180deg); }
     .badge-active { background: #38a169; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; margin-left: 10px; }
-    .btn-select { background: #cbd5e0; color: #2d3748; }
+    .btn-select { background: #cbd5e0; color: #1a202c; font-weight: bold; }
     .btn-select:hover { background: #a0aec0; }
   </style>
 </head>
@@ -26,7 +27,7 @@
     <p>Gérez ici la configuration et la voix de référence pour le robot physique ATOM Echo.</p>
 
     <h2>Configuration API</h2>
-    <div style="background: #e2e8f0; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+    <div style="background: #1a202c; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #4a5568;">
       <form id="apiKeyForm" style="display: flex; flex-direction: column; gap: 15px;">
         <div style="display: flex; gap: 10px; align-items: flex-end;">
           <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
@@ -46,9 +47,26 @@
       </form>
     </div>
 
-    <h2>Configuration Imprimante Niimbot</h2>
-    <div style="background: #e2e8f0; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-      <p style="margin-top: 0; font-size: 14px; color: #4a5568;">Assurez-vous que l'imprimante est allumée et jumelée à Windows via les paramètres Bluetooth.</p>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <h2>Configuration Imprimante Niimbot</h2>
+      <button onclick="document.getElementById('btHelp').style.display = document.getElementById('btHelp').style.display === 'none' ? 'block' : 'none'" style="background: #4a5568; padding: 5px 10px; font-size: 12px;">&#10068; Aide Bluetooth</button>
+    </div>
+    
+    <div id="btHelp" style="display: none; background: #1a202c; border: 2px solid #4a5568; padding: 15px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+      <h3 style="margin-top:0;">Guide de Connexion Windows : Port COM Virtuel</h3>
+      <p>Pour que Python puisse communiquer avec l'imprimante sans instabilité, vous devez router le Bluetooth vers un port COM Windows.</p>
+      <div style="margin-bottom: 8px;"><strong>1.</strong> Allumez votre imprimante Niimbot B1.</div>
+      <div style="margin-bottom: 8px;"><strong>2.</strong> Ouvrez les <strong>Paramètres Windows</strong> > <strong>Bluetooth et appareils</strong>. Ajoutez l'imprimante (B1-XXXX). Si code PIN demandé : 0000 ou 1234.</div>
+      <div style="margin-bottom: 8px;"><strong>3.</strong> Au bas de la page Bluetooth, cliquez sur <strong>Paramètres des appareils supplémentaires</strong> (ou Plus de paramètres Bluetooth).</div>
+      <div style="margin-bottom: 8px;"><strong>4.</strong> Dans la nouvelle fenêtre, allez dans l'onglet <strong>Ports COM</strong> et cliquez sur <strong>Ajouter...</strong>.</div>
+      <div style="margin-bottom: 8px;"><strong>5.</strong> Cochez <strong>Sortant (l'ordinateur lance la connexion)</strong>, sélectionnez votre imprimante <code>B1-XXXX</code>, puis cliquez sur <strong>OK</strong>.</div>
+      <div style="margin-bottom: 8px;"><strong>6.</strong> Windows va créer une ligne du genre : <em>Port : COM8 | Direction : Sortant</em>. <strong>Notez ce numéro de port !</strong></div>
+      <div style="margin-bottom: 8px;"><strong>7.</strong> Sélectionnez ce numéro dans la liste ci-dessous et cliquez sur Tester.</div>
+      <button onclick="document.getElementById('btHelp').style.display = 'none'" style="background: #e53e3e; padding: 5px 10px; font-size: 12px; margin-top: 10px;">Fermer l'aide</button>
+    </div>
+
+    <div style="background: #1a202c; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #4a5568;">
+      <p style="margin-top: 0; font-size: 14px; color: #a0aec0;">Assurez-vous que l'imprimante est allumée et jumelée à Windows via les paramètres Bluetooth.</p>
       <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 10px;">
         <div class="form-group" style="margin-bottom: 0; flex-grow: 1;">
           <label for="printerPort">Port Série (COM) de l'imprimante</label>
