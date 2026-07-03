@@ -34,6 +34,15 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
+if not exist ".env" (
+    echo.
+    echo [4/4] Creation du fichier .env par defaut...
+    copy .env.example .env > nul
+    color 0E
+    echo [ATTENTION] N'oubliez pas d'ouvrir le fichier .env et d'y ajouter vos cles API !
+    color 0A
+)
+
 echo.
 echo ==========================================
 echo   INSTALLATION TERMINEE AVEC SUCCES !
