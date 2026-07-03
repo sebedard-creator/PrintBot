@@ -245,8 +245,8 @@
         const styleRow = document.createElement('div');
         styleRow.style.fontSize = '12px';
         styleRow.style.color = '#4a5568';
-        const displayStyle = v.style || "Voix d'un homme adulte, ton naturel.";
-        styleRow.innerHTML = `<em>Style : ${displayStyle}</em> <a href="#" style="color:#5a67d8; margin-left:8px; text-decoration:none;" onclick="editVoiceStyle('${v.id}', '${displayStyle.replace(/'/g, "\\'")}'); return false;">(Modifier)</a>`;
+        const escapedStyle = displayStyle.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        styleRow.innerHTML = `<em>Style : ${escapedStyle}</em> <a href="#" style="color:#5a67d8; margin-left:8px; text-decoration:none;" onclick="editVoiceStyle('${v.id}', '${displayStyle.replace(/'/g, "\\'").replace(/"/g, "&quot;")}'); return false;">(Modifier)</a>`;
         infoDiv.appendChild(styleRow);
         
         const audio = document.createElement('audio');
@@ -311,7 +311,12 @@
           const logWindow = document.getElementById('logWindow');
           const isScrolledToBottom = logWindow.scrollHeight - logWindow.clientHeight <= logWindow.scrollTop + 10;
           
-          logWindow.innerHTML = data.logs.join('<br>');
+          logWindow.innerHTML = '';
+          data.logs.forEach(log => {
+            const div = document.createElement('div');
+            div.textContent = log;
+            logWindow.appendChild(div);
+          });
           
           if (isScrolledToBottom) {
             logWindow.scrollTop = logWindow.scrollHeight;

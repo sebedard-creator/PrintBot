@@ -315,9 +315,7 @@ class PrinterClient:
         packet = self._transceive(RequestCodeEnum.SET_LABEL_DENSITY, bytes((n,)), 16)
         return bool(packet.data[0])
 
-    def start_print(self):
-        packet = self._transceive(RequestCodeEnum.START_PRINT, b"\x01")
-        return bool(packet.data[0])
+
 
     def end_print(self):
         packet = self._transceive(RequestCodeEnum.END_PRINT, b"\x01")

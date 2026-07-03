@@ -45,7 +45,6 @@ sys.stderr = log_catcher
 import printbot_engine
 import image_formatter
 import conversation_manager
-import replicate
 
 manager = conversation_manager.ConversationManager()
 
@@ -279,8 +278,6 @@ def get_print_ready():
 @app.route('/api/greeting', methods=['GET'])
 def greeting():
     # Appele par l'ATOM Echo au boot
-    # On initialise l'etat de la conversation !
-    msg = manager.power_up()
     text = manager.power_up()
     # On renvoie le message "Bonjour. Je suis connecté..." mais on garde le message initial de l'état
     try:
@@ -549,4 +546,4 @@ if __name__ == '__main__':
         # Lancer le pre-cache au demarrage pour toutes les voix
         threading.Thread(target=precache_all_greetings, daemon=True).start()
         
-    app.run(host='10.0.0.30', port=5666, debug=os.getenv('FLASK_DEBUG', '1') == '1')
+    app.run(host=os.getenv('SERVER_HOST', '10.0.0.30'), port=5666, debug=(os.getenv('FLASK_DEBUG', '1') == '1'))

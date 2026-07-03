@@ -7,5 +7,5 @@ anthropic>=0.25.0
 faster-whisper>=1.0.0
 deep-translator>=1.11.4
 pydub>=0.25.1
- 
+numpy
 pyserial
