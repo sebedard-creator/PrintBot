@@ -26,7 +26,7 @@ PrintBot est un jouet interactif et magique basé sur le concept du "Bouton Uniq
 
 ### Prérequis
 - Python 3.11+
-- Windows OS (Requis pour l'implémentation actuelle du Port Série Virtuel Bluetooth)
+- Windows ou macOS (Le port série virtuel Bluetooth est supporté sur les deux plateformes)
 - Un ATOM Echo flashé avec le firmware C++ de streaming UDP adéquat
 - Une imprimante thermique Niimbot B1
 - Des clés API pour **Replicate** et **Anthropic**
@@ -39,12 +39,9 @@ PrintBot est un jouet interactif et magique basé sur le concept du "Bouton Uniq
    cd PrintBot/server
    ```
 
-2. **Créer l'environnement virtuel** :
-   ```bash
-   python -m venv .venv
-   .\.venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+   *Sous Windows :* Lancez `install.bat`
+   *Sous Mac/Linux :* Lancez `bash install.sh`
+   *(Ces scripts s'occuperont de créer l'environnement virtuel et d'installer les dépendances)*
 
 3. **Configurer l'environnement** :
    Copiez le fichier d'exemple et ajoutez vos clés API :
@@ -55,10 +52,7 @@ PrintBot est un jouet interactif et magique basé sur le concept du "Bouton Uniq
 
 ### Démarrer le Serveur
 
-Double-cliquez sur le fichier `start.bat` à la racine du projet, ou lancez :
-```bash
-python server/app.py
-```
+Double-cliquez sur `start.bat` (Windows) ou lancez `bash start.sh` (Mac) à la racine du projet.
 Le serveur démarrera localement sur le port `5666`.
 
 ### Configuration de l'Imprimante

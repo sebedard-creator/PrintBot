@@ -7,6 +7,7 @@ Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/)
 
 ## [0.9.0] - 2026-06-21
 ### Ajouté
+- **Support macOS (Apple Silicon & Intel) :** Création des scripts natifs `install.sh` et `start.sh` pour garantir une compatibilité d'installation complète sur les environnements Mac/Linux. Le backend Python était déjà 100% agnostique.
 - **Easter Egg Musical & Mode Disco :** Si l'utilisateur prononce "chante-moi une chanson" ou une de ses variantes phonétiques, le processus standard IA est court-circuité. Le serveur pige aléatoirement parmi 5 chansons pré-converties en format natif (PCM 16kHz) et les envoie à l'imprimante. L'ATOM Echo passe alors en mode Disco avec sa LED qui clignote aléatoirement de toutes les couleurs à intensité maximale pendant la musique.
 - **Aide Bluetooth Intégrée :** Ajout d'un bouton "Aide Bluetooth" dans l'interface Web (index.html) qui affiche un guide détaillé étape par étape pour configurer le port COM virtuel sous Windows.
 - **Tolérance Vocale Étendue (Homophones) :** Extension du dictionnaire de remplacement dans `conversation_manager.py` pour inclure de nouveaux faux positifs de Whisper lorsqu'on sélectionne la voix #1 (ex: "arrête", "erre", "art", "arr...").
