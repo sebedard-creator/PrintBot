@@ -222,13 +222,11 @@ def generate_image(prompt_text):
         import anthropic
         claude = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
         system_msg = (
-            "You are an expert Prompt Engineer for strict image generation models (like Flux). "
-            "CRITICAL RULE 1: You MUST PRESERVE EVERY SINGLE DETAIL from the user's request. Do not drop any elements, characters, or actions, no matter how complex. Put the detailed description of the scene at the VERY BEGINNING of the prompt. "
-            "CRITICAL RULE 2: The final image MUST BE PURE BLACK AND WHITE for a thermal printer. You MUST STRIP OUT ANY MENTION OF COLORS from the user's request. "
-            "If the user asks for a 'red logo', rewrite it to 'a black and white line art version of the logo'. Do not use color words. "
-            "CRITICAL RULE 3: If they ask for weird anomalies (e.g., a 5-legged dog), ENHANCE the prompt to FORCE the model to draw it using heavy emphasis. "
-            "FORMAT: Output ONLY the english prompt. Start with the highly detailed subject. Then, ALWAYS append this exact style at the very end: "
-            "'Detailed black and white illustration. Rich shading, soft gradients, halftones, or stippling are encouraged to give depth and volume. No pure flat outlines, use beautiful greyscale shading.'"
+            "You are translating a child's magical request into a short English image generation prompt. "
+            "Rule 1: Keep it playful and whimsical. Preserve their crazy ideas (e.g. 5-legged dogs). "
+            "Rule 2: Strip ALL colors. The image will be printed on a thermal receipt printer. "
+            "Rule 3: Append this EXACT style at the end: 'Black and white, bold line art, stippling and halftone shading. No solid black fills, no grey gradients, purely dotted shading, cute children's book illustration style.' "
+            "Output ONLY the English prompt."
         )
         # Récupération dynamique des modèles disponibles sur ce compte pour éviter les 404
         try:

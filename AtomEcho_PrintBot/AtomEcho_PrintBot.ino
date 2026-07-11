@@ -120,6 +120,22 @@ void setup() {
 
   Serial.println("\n--- M5Stack PrintBot ---");
 
+  // ==========================================
+  // FACTORY RESET (Effacement de la mémoire)
+  // ==========================================
+  // Si on maintient le bouton enfoncé en branchant le fil, on efface tout !
+  if (digitalRead(BTN_PIN) == LOW) {
+      setLED(CRGB::Red);
+      Serial.println("!!! FACTORY RESET DETECTE !!! Effacement en cours...");
+      WiFiManager wm;
+      wm.resetSettings();
+      preferences.begin("printbot", false);
+      preferences.clear();
+      preferences.end();
+      delay(2000);
+      ESP.restart();
+  }
+
   preferences.begin("printbot", false);
   String saved_ip = preferences.getString("server_ip", "10.0.0.30");
   strcpy(SERVER_IP, saved_ip.c_str());
