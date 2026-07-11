@@ -93,6 +93,8 @@ class SerialTransport(BaseTransport):
     def __init__(self, port: str = "auto"):
         port = port if port != "auto" else self._detect_port()
         self._serial = serial.Serial(port=port, baudrate=115200, timeout=0.5)
+        import time
+        time.sleep(2.0)  # Délai CRITIQUE pour Mac: Laisse le temps au Bluetooth de s'éveiller avant le premier envoi
 
     def _detect_port(self):
         all_ports = list(list_comports())
