@@ -186,7 +186,7 @@ class PrinterClient:
         self._log_buffer("send", packet.to_bytes())
         self._send(packet)
         resp = None
-        for _ in range(6):
+        for _ in range(40):
             for packet in self._recv():
                 if packet.type == 219:
                     raise ValueError
