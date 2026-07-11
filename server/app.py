@@ -403,18 +403,32 @@ def udp_server_thread():
                              port = os.getenv('NIIMBOT_COM_PORT')
                              if port:
                                  def print_task():
-                                     try:
-                                         from niimprint import PrinterClient, SerialTransport
-                                         from PIL import Image
-                                         print(f"[{datetime.now().strftime('%H:%M:%S')}] Envoi de l'image a la Niimbot sur {port}...")
-                                         transport = SerialTransport(port)
-                                         client = PrinterClient(transport)
-                                         client.print_image(Image.open(final_image), density=3)
-                                         if hasattr(transport, '_serial'):
-                                             transport._serial.close()  # TOUJOURS FERMER LE PORT !
-                                         print(f"[{datetime.now().strftime('%H:%M:%S')}] Impression Niimbot terminee.")
-                                     except Exception as e:
-                                         print(f"[{datetime.now().strftime('%H:%M:%S')}] Erreur d'impression Niimbot : {e}")
+                                     from niimprint import PrinterClient, SerialTransport
+                                     from PIL import Image
+                                     
+                                     max_retries = 3
+                                     for attempt in range(max_retries):
+                                         try:
+                                             print(f"[{datetime.now().strftime('%H:%M:%S')}] Envoi de l'image a la Niimbot sur {port} (Tentative {attempt+1}/{max_retries})...")
+                                             transport = SerialTransport(port)
+                                             client = PrinterClient(transport)
+                                             client.print_image(Image.open(final_image), density=3)
+                                             if hasattr(transport, '_serial'):
+                                                 transport._serial.close()  # TOUJOURS FERMER LE PORT !
+                                             print(f"[{datetime.now().strftime('%H:%M:%S')}] Impression Niimbot terminee.")
+                                             break  # Succes, on sort de la boucle
+                                         except Exception as e:
+                                             print(f"[{datetime.now().strftime('%H:%M:%S')}] Erreur d'impression Niimbot : {e}")
+                                             try:
+                                                 if 'transport' in locals() and hasattr(transport, '_serial'):
+                                                     transport._serial.close()
+                                             except:
+                                                 pass
+                                             if attempt < max_retries - 1:
+                                                 import time
+                                                 time.sleep(1.0)
+                                             else:
+                                                 print(f"[{datetime.now().strftime('%H:%M:%S')}] Echec definitif de l'impression apres {max_retries} tentatives.")
                                  threading.Thread(target=print_task).start()
                              else:
                                  print(f"[{datetime.now().strftime('%H:%M:%S')}] AVERTISSEMENT : Aucun port COM Niimbot configure dans .env.")
