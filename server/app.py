@@ -546,4 +546,4 @@ if __name__ == '__main__':
         # Lancer le pre-cache au demarrage pour toutes les voix
         threading.Thread(target=precache_all_greetings, daemon=True).start()
         
-    app.run(host=os.getenv('SERVER_HOST', '10.0.0.30'), port=5666, debug=(os.getenv('FLASK_DEBUG', '1') == '1'))
+    app.run(host=os.getenv('SERVER_HOST', '0.0.0.0'), port=5666, debug=(os.getenv('FLASK_DEBUG', '1') == '1'))
