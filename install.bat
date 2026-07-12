@@ -19,9 +19,14 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [2/3] Activation et mise a jour de pip...
+echo [2/4] Activation et mise a jour de pip...
 call .venv\Scripts\activate.bat
 python.exe -m pip install --upgrade pip
+
+echo.
+echo [3/4] Installation de FFmpeg (Requis pour l'audio)...
+winget install "FFmpeg (Essentials Build)" --accept-source-agreements --accept-package-agreements > nul 2>&1
+echo Note: Si winget echoue, installez ffmpeg manuellement.
 
 echo.
 echo [3/3] Installation des dependances...

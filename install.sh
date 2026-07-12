@@ -17,10 +17,18 @@ fi
 echo ""
 echo "[2/4] Activation et mise a jour de pip..."
 source .venv/bin/activate
-python3 -m pip install --upgrade pip
+pip install --upgrade pip
 
 echo ""
-echo "[3/4] Installation des dependances..."
+echo "[3/4] Installation de FFmpeg (Requis pour l'audio)..."
+if command -v brew &> /dev/null; then
+    brew install ffmpeg
+else
+    echo "Homebrew non trouve. Veuillez installer ffmpeg manuellement."
+fi
+
+echo ""
+echo "[4/4] Installation des dependances..."
 pip install -r requirements.txt
 if [ $? -ne 0 ]; then
     echo -e "\033[0;31m[ERREUR] Un probleme est survenu lors de l'installation des librairies.\033[0m"
